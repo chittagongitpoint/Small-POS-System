@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <title>__SYSTEM_NAME__</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    __CSS_CONTENT__
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 h-screen overflow-hidden flex font-sans">
+  
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="fixed inset-0 bg-slate-900/50 flex flex-col items-center justify-center z-50 text-white">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+    <div id="loading-text" class="text-lg font-semibold">Loading data from Google Sheets...</div>
+  </div>
+
+  <!-- Login Screen -->
+  <div id="login-container" class="w-full h-full flex flex-col justify-center py-12 sm:px-6 lg:px-8 hidden">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-slate-900">
+        Sign in to __SYSTEM_NAME__
+      </h2>
+    </div>
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-slate-200">
+        <form id="login-form" class="space-y-6">
+          <div id="login-error" class="hidden bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center"></div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Email address</label>
+            <input type="email" id="login-email" required class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Password</label>
+            <input type="password" id="login-password" required class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+          </div>
+          <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+            Sign in
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App Layout -->
+  <div id="app-container" class="w-full h-full flex hidden">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col">
+      <div class="p-4 border-b border-slate-200">
+        <h1 class="text-xl font-bold text-blue-700 truncate">__SYSTEM_NAME__</h1>
+        <p class="text-xs text-slate-500 truncate">__SYSTEM_SUBTITLE__</p>
+      </div>
+      <nav class="flex-1 overflow-y-auto p-2 space-y-1" id="nav-links">
+        <!-- Generates via JS -->
+      </nav>
+      <div class="p-4 border-t border-slate-200">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold" id="user-avatar">?</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-slate-900 truncate" id="user-name">User Name</p>
+            <p class="text-xs text-slate-500 truncate" id="user-role">Role</p>
+          </div>
+          <button id="btn-logout" class="text-slate-400 hover:text-red-600 transition" title="Logout">
+            <i data-lucide="log-out" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden bg-slate-50 relative">
+      <header class="bg-white border-b border-slate-200 p-4 flex justify-between items-center z-10 shadow-sm">
+        <h2 id="current-view-title" class="text-xl font-semibold text-slate-800">Dashboard</h2>
+        <div class="flex gap-2" id="header-actions"></div>
+      </header>
+      
+      <div class="flex-1 overflow-y-auto p-6 relative" id="view-container">
+        
+        <!-- Dashboard View -->
+        <div id="view-dashboard" class="view-section hidden space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="dashboard-stats"></div>
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="text-lg font-semibold mb-4">Recent Sales</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm text-left">
+                <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b">
+                  <tr><th>ID</th><th>Date</th><th>Customer</th><th>Total</th></tr>
+                </thead>
+                <tbody id="dash-sales-tb" class="divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- POS View -->
+        <div id="view-pos" class="view-section hidden h-full flex flex-col lg:flex-row gap-6">
+          <div class="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 p-4 min-h-0">
+            <input type="text" id="pos-search" placeholder="Search products..." class="w-full px-4 py-2 border rounded-lg mb-4">
+            <div class="flex gap-2 overflow-x-auto mb-4 pb-2" id="pos-categories"></div>
+            <div class="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 content-start" id="pos-products"></div>
+          </div>
+          <div class="w-full lg:w-96 flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
+            <div class="p-4 border-b">
+              <h3 class="font-semibold text-lg">Current Sale</h3>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-3" id="pos-cart"></div>
+            <div class="p-4 border-t bg-slate-50 rounded-b-xl space-y-3">
+              <input type="text" id="pos-cust-name" placeholder="Customer Name (Optional)" class="w-full px-3 py-2 border rounded text-sm">
+              <input type="text" id="pos-cust-phone" placeholder="Phone Number (Optional)" class="w-full px-3 py-2 border rounded text-sm">
+              <div class="flex justify-between items-center text-lg font-bold py-2">
+                <span>Total:</span>
+                <span id="pos-total">৳0</span>
+              </div>
+              <button id="btn-checkout" class="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition">Complete Sale</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generic Table View for Inventory, Categories, Customers, Users -->
+        <div id="view-table" class="view-section hidden">
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-4 border-b flex justify-between items-center bg-slate-50">
+              <div class="relative w-64">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+                <input type="text" id="table-search" placeholder="Search..." class="w-full pl-9 pr-4 py-2 border rounded-lg text-sm">
+              </div>
+              <button id="btn-add-record" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+                <i data-lucide="plus" class="w-4 h-4"></i> Add New
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm text-left">
+                <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b" id="table-head"></thead>
+                <tbody class="divide-y divide-slate-200" id="table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Generic Modal Forms -->
+  <div id="modal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[100] hidden">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-md mx-4 overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="p-4 border-b flex justify-between items-center">
+        <h3 class="font-bold text-lg" id="modal-title">Form</h3>
+        <button id="btn-close-modal" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="p-4 overflow-y-auto" id="modal-body"></div>
+      <div class="p-4 border-t bg-slate-50 flex justify-end gap-3">
+        <button id="btn-cancel-modal" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium">Cancel</button>
+        <button id="btn-save-modal" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    __JS_CONTENT__
+  </script>
+</body>
+</html>

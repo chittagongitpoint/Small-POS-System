@@ -6,6 +6,9 @@ interface GASExportProps {
   settings: SystemSettings;
 }
 
+import htmlTemplate from '../gas/app.html?raw';
+import jsTemplate from '../gas/app.js?raw';
+
 export default function GASExport({ settings }: GASExportProps) {
   const [copiedScript, setCopiedScript] = useState(false);
   const [copiedHtml, setCopiedHtml] = useState(false);
@@ -41,8 +44,8 @@ export default function GASExport({ settings }: GASExportProps) {
           <div className="bg-blue-50 text-blue-800 p-4 rounded-lg mb-6 flex gap-3 text-sm border border-blue-200">
             <Check className="w-5 h-5 flex-shrink-0 text-blue-600" />
             <div>
-              <p className="font-semibold mb-1">Lite Version Export</p>
-              <p>The code exported below will generate a simplified, single-page POS and Inventory system optimized for Google Apps Script. It does not include the full Dashboard, Settings, or user permission management seen in this preview environment.</p>
+              <p className="font-semibold mb-1">Full Vanilla JS Export</p>
+              <p>The code exported below will generate a full single-page application (SPA) optimized for Google Apps Script, including the Dashboard, POS, Inventory, and User permissions!</p>
             </div>
           </div>
         </div>
@@ -222,162 +225,11 @@ function saveSale(saleData) {
   return { success: true };
 }`;
 
-const getHtmlCode = (settings: SystemSettings) => `<!DOCTYPE html>
-<html>
-  <head>
-    <base target="_top">
-    <title>${settings.systemName} - ${settings.systemSubtitle}</title>
-    <style>
-      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f1f5f9; margin: 0; }
-      .header { background: #1e3a8a; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-      .container { padding: 2rem; }
-      .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
-      .card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem; border: 1px solid #e2e8f0; }
-      h2 { margin-top: 0; color: #1e293b; font-size: 1.2rem; margin-bottom: 1rem; }
-      .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
-      .product { border: 1px solid #e2e8f0; border-radius: 6px; padding: 1rem; cursor: pointer; transition: 0.2s; }
-      .product:hover { border-color: #3b82f6; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-      .product-cat { font-size: 0.75rem; color: #2563eb; font-weight: bold; }
-      .product-name { font-weight: 500; margin: 0.5rem 0; color: #334155; }
-      .product-price { font-weight: bold; color: #0f172a; }
-      .btn { background: #2563eb; color: white; border: none; padding: 0.75rem 1rem; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; transition: background 0.2s; }
-      .btn:hover { background: #1d4ed8; }
-      select, input { width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; }
-      
-      /* Cart Table */
-      #cart-list { margin-bottom: 1rem; max-height: 400px; overflow-y: auto; }
-      .cart-item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9; }
-      .cart-item-name { font-weight: 500; color: #334155;}
-      .loader { text-align: center; padding: 2rem; color: #64748b; }
-    </style>
-  </head>
-  <body>
-    <div class="header">
-      <div>
-        <h1 style="margin: 0; font-size: 1.25rem;">${settings.systemName}</h1>
-        <div style="font-size: 0.75rem; font-weight: normal; opacity: 0.8;">${settings.systemSubtitle} - ${settings.phone}</div>
-      </div>
-      <div id="status">Loading data...</div>
-    </div>
-    
-    <div class="container">
-      <div class="grid">
-        <div class="card">
-          <h2>Products</h2>
-          <div id="products-container" class="product-grid">
-            <div class="loader">Fetching products from Google Sheets...</div>
-          </div>
-        </div>
-        
-        <div class="card" style="display:flex; flex-direction:column;">
-          <h2>Current Sale</h2>
-          <div id="cart-list"></div>
-          
-          <div style="margin-top: auto; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
-            <input type="text" id="cust-name" placeholder="Customer Name">
-            <input type="tel" id="cust-phone" placeholder="Phone Number">
-            <div style="display:flex; justify-content:space-between; margin-bottom: 1rem; font-size: 1.25rem; font-weight: bold;">
-              <span>Total:</span>
-              <span id="cart-total">৳0</span>
-            </div>
-            <button class="btn" onclick="checkout()">Complete Sale</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <script>
-      let appData = { products: [], categories: [], customers: [], sales: [], users: [] };
-      let cart = [];
-
-      window.onload = () => {
-        google.script.run.withSuccessHandler((data) => {
-          appData = data;
-          document.getElementById('status').innerText = 'Connected';
-          renderProducts();
-        }).getAppData();
-      };
-
-      function renderProducts() {
-        const c = document.getElementById('products-container');
-        c.innerHTML = appData.products.length ? appData.products.map(p => \`
-          <div class="product" onclick="addToCart('\${p.id}')">
-            <div class="product-cat">\${p.category}</div>
-            <div class="product-name">\${p.name}</div>
-            <div class="product-price">৳\${p.price}</div>
-            <div style="font-size: 0.75rem; color: #64748b; margin-top:0.25rem;">Stock: \${p.stock}</div>
-          </div>
-        \`).join('') : '<div style="grid-column: 1/-1; text-align: center; color: #64748b;">No products found.</div>';
-      }
-
-      function addToCart(id) {
-        const prod = appData.products.find(p => p.id === id);
-        if(!prod || prod.stock <= 0) return alert('Out of stock');
-        
-        const exist = cart.find(i => i.id === id);
-        if(exist) {
-          if(exist.quantity >= prod.stock) return alert('Cannot exceed stock');
-          exist.quantity++;
-        } else {
-          cart.push({...prod, quantity: 1});
-        }
-        renderCart();
-      }
-
-      function renderCart() {
-        const c = document.getElementById('cart-list');
-        let total = 0;
-        c.innerHTML = cart.map(item => {
-          total += (item.price * item.quantity);
-          return \`
-            <div class="cart-item">
-              <div>
-                <div class="cart-item-name">\${item.name}</div>
-                <div style="font-size:0.8rem; color:#64748b;">\${item.quantity} x ৳\${item.price}</div>
-              </div>
-              <div style="font-weight:bold;">৳\${item.price * item.quantity}</div>
-            </div>
-          \`;
-        }).join('');
-        document.getElementById('cart-total').innerText = '৳' + total;
-      }
-
-      function checkout() {
-        if(cart.length === 0) return alert('Cart is empty');
-        
-        document.getElementById('status').innerText = 'Processing Sale...';
-        
-        let total = 0;
-        cart.forEach(i => total += i.price * i.quantity);
-        
-        const payload = {
-          id: 'S-' + new Date().getTime(),
-          date: new Date().toISOString(),
-          customerName: document.getElementById('cust-name').value,
-          customerPhone: document.getElementById('cust-phone').value,
-          items: cart,
-          total: total
-        };
-
-        google.script.run.withSuccessHandler((res) => {
-          if(res.success) {
-            alert('Sale Completed Successfully!');
-            cart = [];
-            document.getElementById('cust-name').value = '';
-            document.getElementById('cust-phone').value = '';
-            renderCart();
-            document.getElementById('status').innerText = 'Updating stock...';
-            google.script.run.withSuccessHandler((data) => {
-              appData = data;
-              document.getElementById('status').innerText = 'Connected';
-              renderProducts();
-            }).getAppData();
-          } else {
-            alert('Error recording sale');
-            document.getElementById('status').innerText = 'Error';
-          }
-        }).saveSale(payload);
-      }
-    </script>
-  </body>
-</html>`;
+const getHtmlCode = (settings: SystemSettings) => {
+  let html = htmlTemplate;
+  html = html.replace(/__SYSTEM_NAME__/g, () => settings.systemName);
+  html = html.replace(/__SYSTEM_SUBTITLE__/g, () => settings.systemSubtitle);
+  html = html.replace(/__JS_CONTENT__/g, () => jsTemplate);
+  html = html.replace(/__CSS_CONTENT__/g, () => '');
+  return html;
+};

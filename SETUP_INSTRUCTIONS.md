@@ -1,7 +1,7 @@
 # Google Apps Script (GAS) Setup Instructions
 
-**NOTE: Lite Version Export**
-The code provided by the "GAS Setup" tab generates a simplified, lightweight, single-page POS and Inventory system optimized for Google Apps Script. It does not include the full Dashboard, Settings, or user permission management seen in the preview environment. It is a vanilla HTML/JS approach for max compatibility within the Apps Script environment.
+**NOTE: Full Site Export**
+The code provided by the "GAS Setup" tab generates a fully functional, single-page application (SPA) optimized for Google Apps Script using pure HTML, CSS (Tailwind), and Javascript. It includes the Dashboard, POS, Inventory, and User permissions system mirroring the preview environment!
 
 This guide walks you through deploying your Point of Sale (POS) & Inventory System directly on Google Apps Script (GAS), using Google Sheets as the free database backend.
 
