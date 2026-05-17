@@ -1,6 +1,7 @@
 export interface CategoryItem {
   id: string;
   name: string;
+  icon?: string;
 }
 
 export interface Product {
@@ -9,6 +10,7 @@ export interface Product {
   category: string;
   price: number;
   stock: number;
+  image?: string;
 }
 
 export interface CartItem extends Product {
@@ -36,11 +38,21 @@ export interface Sale {
 
 export type Role = 'admin' | 'staff';
 
+export interface MysqlSettings {
+  enabled: boolean;
+  apiUrl: string;
+  dbHost: string;
+  dbName: string;
+  dbUser: string;
+  dbPass: string;
+}
+
 export interface SystemSettings {
   systemName: string;
   systemSubtitle: string;
   phone: string;
   defaultLanguage: 'en' | 'bn';
+  mysql?: MysqlSettings;
 }
 
 export interface Permission {

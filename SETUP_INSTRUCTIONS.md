@@ -1,110 +1,111 @@
-# Google Apps Script (GAS) Setup Instructions
+# MySQL / InfinityFree Setup Instructions
 
-**NOTE: Full Site Export**
-The code provided by the "GAS Setup" tab generates a fully functional, single-page application (SPA) optimized for Google Apps Script using pure HTML, CSS (Tailwind), and Javascript. It includes the Dashboard, POS, Inventory, and User permissions system mirroring the preview environment!
+This guide walks you through setting up your Point of Sale (POS) & Inventory System using an external MySQL database (e.g., on InfinityFree or any PHP/MySQL hosting).
 
-This guide walks you through deploying your Point of Sale (POS) & Inventory System directly on Google Apps Script (GAS), using Google Sheets as the free database backend.
+## 1. Prepare your MySQL Database
+Create a new MySQL database on your hosting and run the following SQL commands to create the required tables:
 
-## 1. Create the Google Sheet Database
-1. Go to [Google Sheets](https://sheets.google.com) and create a new blank spreadsheet.
-2. Name the spreadsheet (e.g., "Khaja Auto POS Database").
-3. You will need to create the following sheets (tabs at the bottom of the screen):
+```sql
+CREATE TABLE categories (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    icon VARCHAR(50)
+);
 
-### Sheet 1: `Products`
-Create the following column headers in Row 1 (A1:E1):
-* **ID** (A1)
-* **Name** (B1)
-* **Category** (C1)
-* **Price** (D1)
-* **Stock** (E1)
+CREATE TABLE products (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(255),
+    price DECIMAL(10,2),
+    stock INT,
+    image LONGTEXT
+);
 
-*(Optional) You can pre-fill some rows with your initial products starting from Row 2.*
+CREATE TABLE customers (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    email VARCHAR(255),
+    address TEXT,
+    totalPurchases DECIMAL(15,2)
+);
 
-### Sheet 2: `Sales`
-Create the following column headers in Row 1 (A1:F1):
-* **Sale ID** (A1)
-* **Date** (B1)
-* **Customer Name** (C1)
-* **Customer Phone** (D1)
-* **Total Amount** (E1)
-* **Items Details** (F1) *(This will store a JSON dump of the cart items)*
+CREATE TABLE sales (
+    id VARCHAR(50) PRIMARY KEY,
+    date DATETIME NOT NULL,
+    items LONGTEXT, -- Stores JSON array
+    total DECIMAL(15,2),
+    customerId VARCHAR(50),
+    customerName VARCHAR(255),
+    customerPhone VARCHAR(50)
+);
 
-### Sheet 3: `Categories`
-Create the following column headers in Row 1 (A1:B1):
-* **ID** (A1)
-* **Name** (B1)
+CREATE TABLE users (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE,
+    phone VARCHAR(50),
+    role VARCHAR(20),
+    password VARCHAR(255),
+    permissions LONGTEXT -- Stores JSON object
+);
+```
 
-### Sheet 4: `Customers`
-Create the following column headers in Row 1 (A1:D1):
-* **ID** (A1)
-* **Name** (B1)
-* **Phone** (C1)
-* **Total Purchases** (D1)
+## 2. Upload the API Bridge
+1. In the application, go to **Settings**.
+2. Click **Download PHP API Bridge**. (IMPORTANT: If you previous uploaded an older version, you MUST replace it with this new version to fix the "Failed to fetch" errors).
+3. Upload the downloaded `pos_api.php` file to your hosting (usually in the `public_html` or `htdocs` folder).
 
-### Sheet 5: `Users`
-Create the following column headers in Row 1 (A1:G1):
-* **ID** (A1)
-* **Name** (B1)
-* **Email** (C1)
-* **Phone** (D1)
-* **Password** (E1)
-* **Role** (F1) *(admin or staff)*
-* **Permissions** (G1) *(JSON string of permissions, e.g., `{"dashboard":true,"pos":true}`)*
+## 3. Configure the System
+1. Login to your POS system as an administrator.
+2. Navigate to the **Settings** page.
+3. In the **MySQL Database Configuration** section:
+   * Check **Enable MySQL Storage**.
+   * **API Bridge URL:** Enter the full URL to the file you uploaded (e.g., `https://khajaauto.page.gd/pos_api.php`).
+   * **Database Host:** Enter your database host (usually `localhost` or a specific hostname provided by your host).
+   * **Database Name:** Enter your MySQL database name.
+   * **Database User:** Enter your MySQL username.
+   * **Database Password:** Enter your MySQL password.
+4. Click **Save Changes**.
+5. The system will now automatically sync your data to the MySQL database and fetch from it on startup!
 
-### Sheet 6: `Settings`
-Create the following column headers in Row 1 (A1:D1):
-* **System Name** (A1)
-* **System Subtitle** (B1)
-* **Phone** (C1)
-* **Default Language** (D1) *(en or bn)*
+## 4. Hosting the System Yourself (Recommended to bypass CORS & Security blocks)
 
-## 2. Get Your Spreadsheet ID
-1. Look at the URL of your Google Sheet. It looks like this:
-   `https://docs.google.com/spreadsheets/d/1XyZ...abc123/edit#gid=0`
-2. Your **Spreadsheet ID** is the long string of random characters between `/d/` and `/edit`.
-3. Copy this ID. You will need it in the next step.
+If your hosting provider blocks API requests from other domains (which often happens on InfinityFree and other shared hosts), the best solution is to host the POS application directly on the same domain as your database. This completely avoids "Failed to fetch" and CORS errors.
 
-## 3. Create the Google Apps Script
-1. In your Google Sheet, click on **Extensions** > **Apps Script**.
-2. This opens the Apps Script code editor.
-3. Rename the project at the top left from "Untitled project" to "POS System".
+### Step 4A: Export the App Code
+1. Click the "Share" or "Export" option in the AI Studio platform to download the code as a ZIP file.
+2. Extract the downloaded `.zip` file on your computer.
 
-### Step 3a: `Code.gs`
-1. You will see a file named `Code.gs`. Delete the default code inside it.
-2. From your application's "GAS Setup" tab, click **Copy Code.gs**.
-3. Paste the code into your `Code.gs` file in the Apps Script editor.
-4. **IMPORTANT:** At the very top of `Code.gs`, replace `'YOUR_GOOGLE_SHEET_ID_HERE'` with the Spreadsheet ID you copied in Step 2.
+### Step 4B: Build the App (requires Node.js)
+This app is built with modern React. Before uploading, it must be compiled into standard HTML/JS files.
+1. Download and install **Node.js** (https://nodejs.org) on your computer.
+2. Extract the downloaded `.zip` folder. **Important for Windows Users:** Extract it to a folder with a simple name like `pos-system` directly on your Desktop or Documents (e.g. `C:\Users\YourName\Desktop\pos-system`). Avoid folder names starting with dashes like `-solar-point-pos`.
+3. Open a terminal or command prompt inside the extracted project folder.
+4. Run the following command to install dependencies:
+   ```bash
+   npm install
+   ```
+5. Run the following command to build the project:
+   ```bash
+   npm run build
+   ```
+   *(If you get a "vite: not found" or ".bin is not recognized" error, simply run `npx vite build` instead).*
 
-### Step 3b: `Index.html`
-1. In the Apps Script editor, click the `+` icon next to **Files** (on the left sidebar) and select **HTML**.
-2. Name the file `Index` (it will automatically become `Index.html`).
-3. Delete the default HTML code inside it.
-4. From your application's "GAS Setup" tab, click **Copy Index.html**.
-5. Paste the code into your `Index.html` file in the Apps Script editor.
-6. Click the Save icon (or press Ctrl+S / Cmd+S) to save both files.
-
-## 4. Deploy the Web App
-1. At the top right of the Apps Script editor, click the blue **Deploy** button and select **New deployment**.
-2. Click the gear icon ⚙️ next to "Select type" and choose **Web app**.
-3. Fill out the configuration form:
-   * **Description:** "Initial POS Deployment" (or whatever you like).
-   * **Execute as:** "Me ([your email])". *(This ensures the script has access to your Google Sheet)*
-   * **Who has access:** Choose "Anyone" (or "Anyone with Google Account" depending on your security needs).
-4. Click **Deploy**.
-5. **Authorization:** Since this is your first time deploying, Google will ask you to authorize the script.
-   * Click **Review permissions**.
-   * Choose your Google account.
-   * You may see a warning saying "Google hasn't verified this app." Click **Advanced** at the bottom, then click **Go to POS System (unsafe)**.
-   * Click **Allow** to grant it access to view and manage your spreadsheets.
-6. After authorization finishes, you will be given a **Web app URL**.
-7. Copy this URL.
-
-## 5. Use Your Application!
-1. Paste the **Web app URL** into any browser.
-2. You will see the Point of Sale system running! It will read products directly from your Google Sheet and write new sales directly to the `Sales` sheet.
-3. Share this URL with your sales staff.
+### Step 4C: Upload to your Hosting
+1. After the build completes, a new folder named `dist` will be created inside the project directory.
+2. Open your hosting File Manager or FTP client (like FileZilla).
+3. Upload **everything INSIDE the `dist` folder** directly to your hosting's public directory (e.g., `public_html` or `htdocs`).
+4. Upload the `pos_api.php` file into the exactly same `public_html` folder.
+5. Visit your website domain (e.g. `https://yourdomain.com`).
+6. Because the POS app and the `pos_api.php` are now hosted together on the same server, the browser will no longer block the connection. Go into the system Settings and use your database credentials as before.
 
 ## Troubleshooting
-* **"Loading..." stuck forever:** Ensure the Web App URL is opened in a new tab. If it's embedded, your browser might block third-party cookies or scripts.
-* **Out of stock errors:** Ensure you have actually entered stock numbers greater than 0 in the 'Stock' column of your 'Products' sheet.
-* **Saving sales fails:** Ensure all sheet names exactly match standard casing (`Products` and `Sales`). App scripts are case-sensitive.
+* **Failed to fetch / Connection Error ("InfinityFree blocks API requests"):** 
+    - **SECURITY BLOCK:** Providers like InfinityFree have security systems (like an AES challenge or bot protection) that check browser cookies. Even if `test.php` works when you visit it directly, InfinityFree will BLOCK automated API requests coming from this app because it is on a different domain.
+    - **How to fix:** You unfortunately cannot use InfinityFree for an external API bridge *while hosting the app elsewhere*. You MUST follow **Section 4: Hosting the System Yourself** to put both the app and the `pos_api.php` on the same domain to fix this.
+    - **SSL Requirements:** Use `https://` for your API Bridge URL.
+* **Database Connection failed:** The PHP bridge is working, but it cannot connect to the MySQL server. Verify your Host, Name, User, and Password in the Settings.
+    - **cPanel tip:** If using cPanel, creating a database and a user is not enough. You MUST also "Add User to Database" and grant "All Privileges".
+    - **HTTP Error 500:** If you see an `HTTP Error: 500` after connecting successfully, it means the tables were not created. Download the PHP API Bridge again (which now auto-creates tables) and replace the old file.
+* **Missing Credentials error:** Ensure you have saved your settings after enabling MySQL. The new bridge requires a POST body with the credentials.

@@ -1,7 +1,39 @@
 import React, { useState } from 'react';
 import { CategoryItem } from '../types';
-import { Plus, Edit2, Trash2, Search, X, Tags } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, X, Tags, 
+  Package, ShoppingBag, Laptop, Smartphone, Speaker, Watch, 
+  Zap, Sun, Battery, Settings, Users, Shield, LayoutDashboard,
+  HardDrive, Cpu, MousePointer2, Keyboard, Monitor
+} from 'lucide-react';
+import * as Icons from 'lucide-react';
 import ConfirmDialog from './ConfirmDialog';
+
+const categoryIcons = [
+  { name: 'Package', icon: Package },
+  { name: 'ShoppingBag', icon: ShoppingBag },
+  { name: 'Laptop', icon: Laptop },
+  { name: 'Smartphone', icon: Smartphone },
+  { name: 'Speaker', icon: Speaker },
+  { name: 'Watch', icon: Watch },
+  { name: 'Zap', icon: Zap },
+  { name: 'Sun', icon: Sun },
+  { name: 'Battery', icon: Battery },
+  { name: 'HardDrive', icon: HardDrive },
+  { name: 'Cpu', icon: Cpu },
+  { name: 'MousePointer2', icon: MousePointer2 },
+  { name: 'Keyboard', icon: Keyboard },
+  { name: 'Monitor', icon: Monitor },
+  { name: 'Settings', icon: Settings },
+  { name: 'Users', icon: Users },
+  { name: 'Shield', icon: Shield },
+  { name: 'LayoutDashboard', icon: LayoutDashboard },
+  { name: 'Tags', icon: Tags },
+];
+
+const IconRenderer = ({ name, className }: { name: string, className?: string }) => {
+  const IconComponent = (Icons as any)[name] || Package;
+  return <IconComponent className={className} />;
+};
 
 interface CategoriesProps {
   categories: CategoryItem[];
@@ -23,7 +55,8 @@ const strings = {
     editTitle: 'Edit Category',
     addTitle: 'Add New Category',
     confirmDelete: 'Are you sure you want to delete this category?',
-    noCategories: 'No categories found.'
+    noCategories: 'No categories found.',
+    icon: 'Icon'
   },
   bn: {
     title: 'ক্যাটাগরি ব্যবস্থাপনা',
@@ -36,7 +69,8 @@ const strings = {
     editTitle: 'ক্যাটাগরি সম্পাদনা',
     addTitle: 'নতুন ক্যাটাগরি যোগ করুন',
     confirmDelete: 'আপনি কি নিশ্চিত যে আপনি এই ক্যাটাগরি মুছে ফেলতে চান?',
-    noCategories: 'কোন ক্যাটাগরি পাওয়া যায়নি।'
+    noCategories: 'কোন ক্যাটাগরি পাওয়া যায়নি।',
+    icon: 'আইকন'
   }
 };
 
@@ -45,6 +79,7 @@ export default function Categories({ categories, onAddCategory, onUpdateCategory
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CategoryItem | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [selectedIcon, setSelectedIcon] = useState('Package');
 
   const t = strings[lang];
 
@@ -58,6 +93,7 @@ export default function Categories({ categories, onAddCategory, onUpdateCategory
     const categoryData: CategoryItem = {
       id: editingItem ? editingItem.id : `CAT-${Date.now()}`,
       name: formData.get('name') as string,
+      icon: selectedIcon,
     };
 
     if (editingItem) {
@@ -81,11 +117,13 @@ export default function Categories({ categories, onAddCategory, onUpdateCategory
 
   const openAdd = () => {
     setEditingItem(null);
+    setSelectedIcon('Package');
     setIsModalOpen(true);
   };
 
   const openEdit = (category: CategoryItem) => {
     setEditingItem(category);
+    setSelectedIcon(category.icon || 'Package');
     setIsModalOpen(true);
   };
 
@@ -128,13 +166,19 @@ export default function Categories({ categories, onAddCategory, onUpdateCategory
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-100 text-[#475569] text-[11px] uppercase tracking-wider sticky top-0">
-              <th className="p-4 font-bold rounded-tl-lg">{t.name}</th>
+              <th className="p-4 font-bold w-16">{t.icon}</th>
+              <th className="p-4 font-bold">{t.name}</th>
               <th className="p-4 font-bold text-right rounded-tr-lg">{t.actions}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filtered.map(category => (
               <tr key={category.id} className="hover:bg-slate-50 transition-colors text-sm">
+                <td className="p-4">
+                  <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-blue-600 border border-slate-200">
+                    <IconRenderer name={category.icon || 'Package'} className="w-5 h-5" />
+                  </div>
+                </td>
                 <td className="p-4 font-medium text-slate-800">{category.name}</td>
                 <td className="p-4 flex items-center justify-end gap-2">
                   <button onClick={() => openEdit(category)} className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors">
@@ -178,6 +222,27 @@ export default function Categories({ categories, onAddCategory, onUpdateCategory
                   autoFocus
                   className="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{t.icon}</label>
+                <div className="grid grid-cols-6 gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200 max-h-40 overflow-y-auto">
+                  {categoryIcons.map((item) => (
+                    <button
+                      key={item.name}
+                      type="button"
+                      onClick={() => setSelectedIcon(item.name)}
+                      className={`p-2 rounded-lg flex items-center justify-center transition-all ${
+                        selectedIcon === item.name 
+                        ? 'bg-blue-600 text-white shadow-md scale-110' 
+                        : 'bg-white text-slate-500 hover:bg-blue-50 hover:text-blue-600 border border-slate-200'
+                      }`}
+                      title={item.name}
+                    >
+                      <item.icon className="w-5 h-5" />
+                    </button>
+                  ))}
+                </div>
               </div>
               
               <div className="pt-4 flex justify-end gap-3">

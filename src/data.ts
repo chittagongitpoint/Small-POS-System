@@ -1,10 +1,18 @@
 import { Product, Sale, Customer, AppUser, CategoryItem, SystemSettings } from './types';
 
 export const initialSettings: SystemSettings = {
-  systemName: 'খাজা অটো',
+  systemName: 'Khaja Auto',
   systemSubtitle: 'Electric & Solar Point',
   phone: '018XXXXXXXX',
-  defaultLanguage: 'bn'
+  defaultLanguage: 'en',
+  mysql: {
+    enabled: false,
+    apiUrl: '',
+    dbHost: 'localhost',
+    dbName: '',
+    dbUser: '',
+    dbPass: ''
+  }
 };
 
 export const initialCategories: CategoryItem[] = [

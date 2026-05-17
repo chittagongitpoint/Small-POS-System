@@ -25,6 +25,8 @@ const strings = {
     cancel: 'Cancel',
     editTitle: 'Edit Product',
     addTitle: 'Add New Product',
+    image: 'Image',
+    upload: 'Upload Image',
   },
   bn: {
     addBtn: 'পণ্য যোগ করুন',
@@ -38,6 +40,8 @@ const strings = {
     cancel: 'বাতিল',
     editTitle: 'পণ্য সম্পাদনা করুন',
     addTitle: 'নতুন পণ্য যোগ করুন',
+    image: 'ছবি',
+    upload: 'ছবি আপলোড করুন',
   }
 };
 
@@ -46,6 +50,7 @@ export default function Inventory({ products, categories, onAddProduct, onUpdate
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Product | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string>('');
 
   const t = strings[lang];
 
@@ -53,6 +58,17 @@ export default function Inventory({ products, categories, onAddProduct, onUpdate
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     p.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageBase64(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -63,6 +79,7 @@ export default function Inventory({ products, categories, onAddProduct, onUpdate
       category: formData.get('category') as string,
       price: Number(formData.get('price')),
       stock: Number(formData.get('stock')),
+      image: imageBase64 || editingItem?.image,
     };
 
     if (editingItem) {
@@ -86,17 +103,20 @@ export default function Inventory({ products, categories, onAddProduct, onUpdate
 
   const openAdd = () => {
     setEditingItem(null);
+    setImageBase64('');
     setIsModalOpen(true);
   };
 
   const openEdit = (product: Product) => {
     setEditingItem(product);
+    setImageBase64(product.image || '');
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingItem(null);
+    setImageBase64('');
   };
 
   return (
@@ -125,6 +145,7 @@ export default function Inventory({ products, categories, onAddProduct, onUpdate
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-100 text-[#475569] text-[11px] uppercase tracking-wider">
+              <th className="p-4 font-bold w-16">{t.image}</th>
               <th className="p-4 font-bold">{t.name}</th>
               <th className="p-4 font-bold">{t.category}</th>
               <th className="p-4 font-bold">{t.price}</th>
@@ -135,6 +156,15 @@ export default function Inventory({ products, categories, onAddProduct, onUpdate
           <tbody className="divide-y divide-slate-100">
             {filtered.map(product => (
               <tr key={product.id} className="hover:bg-slate-50 transition-colors">
+                <td className="p-4">
+                  <div className="w-10 h-10 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+                    {product.image ? (
+                      <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 font-bold">NO IMG</div>
+                    )}
+                  </div>
+                </td>
                 <td className="p-4 font-medium text-slate-800">{product.name}</td>
                 <td className="p-4">
                   <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded inline-block">
@@ -222,6 +252,24 @@ export default function Inventory({ products, categories, onAddProduct, onUpdate
                     min="0"
                     defaultValue={editingItem?.stock ?? 1}
                     className="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:border-blue-500" 
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t.image}</label>
+                <div className="flex gap-4 items-center">
+                  <div className="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden border border-slate-200 flex-shrink-0">
+                    {imageBase64 ? (
+                      <img src={imageBase64} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400">Preview</div>
+                    )}
+                  </div>
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                   />
                 </div>
               </div>

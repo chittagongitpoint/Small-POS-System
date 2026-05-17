@@ -4,7 +4,6 @@ import { Product, Sale, Customer, AppUser, CategoryItem, SystemSettings } from '
 import POS from './components/POS';
 import Dashboard from './components/Dashboard';
 import Inventory from './components/Inventory';
-import GASExport from './components/GASExport';
 import Customers from './components/Customers';
 import Reports from './components/Reports';
 import UserManagement from './components/UserManagement';
@@ -13,8 +12,9 @@ import Categories from './components/Categories';
 import AppSettings from './components/AppSettings';
 import Login from './components/Login';
 import { LayoutDashboard, ShoppingCart, PackageSearch, Settings, Code, Languages, Users, FileText, ShieldAlert, LogOut, Search, User, Tags } from 'lucide-react';
+import { ApiService } from './services/apiService';
 
-type Tab = 'dashboard' | 'pos' | 'inventory' | 'categories' | 'customers' | 'reports' | 'users' | 'settings' | 'profile' | 'gas';
+type Tab = 'dashboard' | 'pos' | 'inventory' | 'categories' | 'customers' | 'reports' | 'users' | 'settings' | 'profile';
 type Lang = 'en' | 'bn';
 
 export default function App() {
@@ -29,11 +29,30 @@ export default function App() {
     return saved ? { ...initialSettings, ...JSON.parse(saved) } : initialSettings;
   });
   const [lang, setLang] = useState<Lang>(settings.defaultLanguage);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  
+  const api = new ApiService(settings);
 
   useEffect(() => {
     localStorage.setItem('app_settings', JSON.stringify(settings));
     document.title = settings.systemName;
-  }, [settings]);
+    
+    // Initial fetch from MySQL if enabled
+    if (settings.mysql?.enabled && settings.mysql.apiUrl) {
+      setConnectionError(null);
+      api.getAllData().then(data => {
+        if (data && data.error) {
+          setConnectionError(data.message);
+        } else if (data) {
+          if (data.products) setProducts(data.products);
+          if (data.categories) setCategories(data.categories);
+          if (data.customers) setCustomers(data.customers);
+          if (data.sales) setSales(data.sales);
+          if (data.users) setUsers(data.users);
+        }
+      });
+    }
+  }, [settings.mysql?.enabled, settings.mysql?.apiUrl]);
 
   const [categories, setCategories] = useState<CategoryItem[]>(() => {
     const saved = localStorage.getItem('app_categories');
@@ -102,40 +121,95 @@ export default function App() {
   const handleSaleComplete = (sale: Sale) => {
     // confirmation logic inside POS component
     setSales(prev => [...prev, sale]);
-    setProducts(prev => prev.map(p => {
+    const updatedProducts = products.map(p => {
       const soldItem = sale.items.find(i => i.id === p.id);
       if (soldItem) {
         return { ...p, stock: p.stock - soldItem.quantity };
       }
       return p;
-    }));
+    });
+    setProducts(updatedProducts);
     
     // Update customer total purchases if tied to a customer
     if (sale.customerId) {
-        setCustomers(prev => prev.map(c => 
+        const updatedCustomers = customers.map(c => 
           c.id === sale.customerId ? { ...c, totalPurchases: c.totalPurchases + sale.total } : c
-        ));
+        );
+        setCustomers(updatedCustomers);
+        if (settings.mysql?.enabled) {
+          const customer = updatedCustomers.find(c => c.id === sale.customerId);
+          if (customer) api.syncRecord('customer', customer);
+        }
+    }
+
+    if (settings.mysql?.enabled) {
+      api.syncRecord('sale', sale);
+      sale.items.forEach(item => {
+        const prod = updatedProducts.find(p => p.id === item.id);
+        if (prod) api.syncRecord('product', prod);
+      });
     }
   };
 
-  const handleAddCategory = (c: CategoryItem) => setCategories(prev => [c, ...prev]);
-  const handleUpdateCategory = (c: CategoryItem) => setCategories(prev => prev.map(item => item.id === c.id ? c : item));
-  const handleDeleteCategory = (id: string) => setCategories(prev => prev.filter(c => c.id !== id));
+  const handleAddCategory = (c: CategoryItem) => {
+    setCategories(prev => [c, ...prev]);
+    if (settings.mysql?.enabled) api.syncRecord('category', c);
+  };
+  const handleUpdateCategory = (c: CategoryItem) => {
+    setCategories(prev => prev.map(item => item.id === c.id ? c : item));
+    if (settings.mysql?.enabled) api.syncRecord('category', c);
+  };
+  const handleDeleteCategory = (id: string) => {
+    setCategories(prev => prev.filter(c => c.id !== id));
+    if (settings.mysql?.enabled) api.deleteRecord('category', id);
+  };
 
-  const handleAddProduct = (product: Product) => setProducts(prev => [product, ...prev]);
-  const handleUpdateProduct = (updatedProduct: Product) => setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
-  const handleDeleteProduct = (id: string) => setProducts(prev => prev.filter(p => p.id !== id));
+  const handleAddProduct = (product: Product) => {
+    setProducts(prev => [product, ...prev]);
+    if (settings.mysql?.enabled) api.syncRecord('product', product);
+  };
+  const handleUpdateProduct = (updatedProduct: Product) => {
+    setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+    if (settings.mysql?.enabled) api.syncRecord('product', updatedProduct);
+  };
+  const handleDeleteProduct = (id: string) => {
+    setProducts(prev => prev.filter(p => p.id !== id));
+    if (settings.mysql?.enabled) api.deleteRecord('product', id);
+  };
 
-  const handleAddCustomer = (c: Customer) => setCustomers(prev => [c, ...prev]);
-  const handleUpdateCustomer = (c: Customer) => setCustomers(prev => prev.map(item => item.id === c.id ? c : item));
-  const handleDeleteCustomer = (id: string) => setCustomers(prev => prev.filter(c => c.id !== id));
+  const handleAddCustomer = (c: Customer) => {
+    setCustomers(prev => [c, ...prev]);
+    if (settings.mysql?.enabled) api.syncRecord('customer', c);
+  };
+  const handleUpdateCustomer = (c: Customer) => {
+    setCustomers(prev => prev.map(item => item.id === c.id ? c : item));
+    if (settings.mysql?.enabled) api.syncRecord('customer', c);
+  };
+  const handleDeleteCustomer = (id: string) => {
+    setCustomers(prev => prev.filter(c => c.id !== id));
+    if (settings.mysql?.enabled) api.deleteRecord('customer', id);
+  };
 
-  const handleAddUser = (u: AppUser) => setUsers(prev => [u, ...prev]);
-  const handleUpdateUser = (u: AppUser) => setUsers(prev => prev.map(item => item.id === u.id ? u : item));
-  const handleDeleteUser = (id: string) => setUsers(prev => prev.filter(u => u.id !== id));
+  const handleAddUser = (u: AppUser) => {
+    setUsers(prev => [u, ...prev]);
+    if (settings.mysql?.enabled) api.syncRecord('user', u);
+  };
+  const handleUpdateUser = (u: AppUser) => {
+    setUsers(prev => prev.map(item => item.id === u.id ? u : item));
+    if (settings.mysql?.enabled) api.syncRecord('user', u);
+  };
+  const handleDeleteUser = (id: string) => {
+    setUsers(prev => prev.filter(u => u.id !== id));
+    if (settings.mysql?.enabled) api.deleteRecord('user', id);
+  };
 
   const handleUpdateProfile = (updatedData: Partial<AppUser>) => {
-    setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, ...updatedData } : u));
+    const updatedUsers = users.map(u => u.id === currentUser.id ? { ...u, ...updatedData } : u);
+    setUsers(updatedUsers);
+    if (settings.mysql?.enabled) {
+      const user = updatedUsers.find(u => u.id === currentUser.id);
+      if (user) api.syncRecord('user', user);
+    }
   };
 
   const handleUpdateSettings = (newSettings: SystemSettings) => {
@@ -153,7 +227,6 @@ export default function App() {
     { id: 'reports', icon: FileText, labelEn: 'Reports', labelBn: 'রিপোর্ট', requiredPerm: 'reports' },
     { id: 'users', icon: ShieldAlert, labelEn: 'Users & Roles', labelBn: 'ইউজার', requiredPerm: 'users' },
     { id: 'settings', icon: Settings, labelEn: 'Settings', labelBn: 'সেটিংস', requiredPerm: 'settings' },
-    { id: 'gas', icon: Code, labelEn: 'GAS Setup', labelBn: 'গ্যাস কোড', requiredPerm: 'dashboard' }, // Anyone with dashboard perm can see this for demo
   ] as const;
 
   // Filter tabs by permission and role
@@ -252,6 +325,20 @@ export default function App() {
 
         {/* Scrollable Content */}
         <div className="flex-1 p-4 md:p-8 max-w-[1600px] mx-auto w-full overflow-y-auto">
+          {connectionError && (
+            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-center justify-between gap-3 shadow-sm">
+               <div className="flex items-center gap-3">
+                 <ShieldAlert className="w-5 h-5 flex-shrink-0" />
+                 <div>
+                    <p className="text-sm font-bold">Database Connection Error</p>
+                    <p className="text-xs opacity-80">{connectionError}. Check your Settings and Hosting CORS/API configuration.</p>
+                 </div>
+               </div>
+               <button onClick={() => setConnectionError(null)} className="p-1 hover:bg-red-100 rounded-lg">
+                 <Search className="w-4 h-4 rotate-45" />
+               </button>
+            </div>
+          )}
           {activeTab === 'pos' && <POS products={products} customers={customers} onCompleteSale={handleSaleComplete} lang={lang} />}
           {activeTab === 'dashboard' && <Dashboard products={products} sales={sales} lang={lang} />}
           {activeTab === 'inventory' && (
@@ -300,7 +387,6 @@ export default function App() {
             />
           )}
           {activeTab === 'profile' && <UserProfile user={currentUser} onUpdateUser={handleUpdateProfile} lang={lang} />}
-          {activeTab === 'gas' && <GASExport settings={settings} />}
         </div>
       </main>
     </div>
