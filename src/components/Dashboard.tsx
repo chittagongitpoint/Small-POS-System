@@ -6,6 +6,7 @@ interface DashboardProps {
   products: Product[];
   sales: Sale[];
   lang: 'en' | 'bn';
+  onNavigate: (tab: any, filter?: string) => void;
 }
 
 const strings = {
@@ -19,7 +20,8 @@ const strings = {
     id: 'ID',
     customer: 'Customer',
     amount: 'Amount',
-    stock: 'Stock'
+    stock: 'Stock',
+    viewInventory: 'View Inventory',
   },
   bn: {
     totalSalesText: 'মোট বিক্রয় আয়',
@@ -31,11 +33,12 @@ const strings = {
     id: 'আইডি',
     customer: 'গ্রাহক',
     amount: 'পরিমাণ',
-    stock: 'স্টক'
+    stock: 'স্টক',
+    viewInventory: 'ইনভেন্টরি দেখুন',
   }
 };
 
-export default function Dashboard({ products, sales, lang }: DashboardProps) {
+export default function Dashboard({ products, sales, lang, onNavigate }: DashboardProps) {
   const t = strings[lang];
   
   const totalRevenue = sales.reduce((sum, s) => sum + s.total, 0);
@@ -80,7 +83,7 @@ export default function Dashboard({ products, sales, lang }: DashboardProps) {
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-[#E2E8F0] shadow-sm flex items-center gap-4">
+        <div className="bg-white p-5 rounded-xl border border-[#E2E8F0] shadow-sm flex items-center gap-4 hover:border-rose-200 transition-colors cursor-pointer" onClick={() => onNavigate('inventory', 'low-stock')}>
           <div className="p-3 bg-rose-100 text-rose-600 rounded-lg hidden lg:block">
             <AlertTriangle className="w-6 h-6" />
           </div>
@@ -116,8 +119,17 @@ export default function Dashboard({ products, sales, lang }: DashboardProps) {
         </div>
 
         <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden flex flex-col min-h-0">
-          <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-            <h3 className="font-bold text-slate-800 text-sm">{t.lowStock}</h3>
+          <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-500" />
+              {t.lowStock}
+            </h3>
+            <button 
+              onClick={() => onNavigate('inventory', 'low-stock')}
+              className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-wider"
+            >
+              {t.viewInventory} →
+            </button>
           </div>
           <div className="divide-y divide-slate-100 overflow-y-auto">
             {lowStockProducts.map(current => (

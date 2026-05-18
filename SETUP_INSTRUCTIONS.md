@@ -74,8 +74,10 @@ CREATE TABLE users (
 If your hosting provider blocks API requests from other domains (which often happens on InfinityFree and other shared hosts), the best solution is to host the POS application directly on the same domain as your database. This completely avoids "Failed to fetch" and CORS errors.
 
 ### Step 4A: Export the App Code
-1. Click the "Share" or "Export" option in the AI Studio platform to download the code as a ZIP file.
-2. Extract the downloaded `.zip` file on your computer.
+1. Look at the **top right corner of the Google AI Studio screen** (outside of the app preview).
+2. Click the **Export** icon (it usually looks like a cloud with a downward arrow or is inside a three-dot menu).
+3. Select **Download as ZIP** to save the code to your computer.
+4. Extract the downloaded `.zip` file on your computer.
 
 ### Step 4B: Build the App (requires Node.js)
 This app is built with modern React. Before uploading, it must be compiled into standard HTML/JS files.
@@ -97,8 +99,9 @@ This app is built with modern React. Before uploading, it must be compiled into 
 2. Open your hosting File Manager or FTP client (like FileZilla).
 3. Upload **everything INSIDE the `dist` folder** directly to your hosting's public directory (e.g., `public_html` or `htdocs`).
 4. Upload the `pos_api.php` file into the exactly same `public_html` folder.
+   * **PRO TIP:** If you open `pos_api.php` in a text editor, you can type your database username and password directly into the file on lines 16-19. If you do this, you won't ever need to enter your database credentials in the website Settings page again!
 5. Visit your website domain (e.g. `https://yourdomain.com`).
-6. Because the POS app and the `pos_api.php` are now hosted together on the same server, the browser will no longer block the connection. Go into the system Settings and use your database credentials as before.
+6. The app will automatically connect to `/pos_api.php` and use your database!
 
 ## Troubleshooting
 * **Failed to fetch / Connection Error ("InfinityFree blocks API requests"):** 

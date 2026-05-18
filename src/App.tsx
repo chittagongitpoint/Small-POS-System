@@ -19,6 +19,7 @@ type Lang = 'en' | 'bn';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('pos');
+  const [stockFilter, setStockFilter] = useState<'all' | 'low-stock'>('all');
   
   const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
     return localStorage.getItem('app_current_user') || null;
@@ -26,7 +27,18 @@ export default function App() {
 
   const [settings, setSettings] = useState<SystemSettings>(() => {
     const saved = localStorage.getItem('app_settings');
-    return saved ? { ...initialSettings, ...JSON.parse(saved) } : initialSettings;
+    const parsed = saved ? JSON.parse(saved) : null;
+    
+    // Auto-enable for hosted production environments to ignore old localhost flags
+    const isProd = typeof window !== 'undefined' && !window.location.hostname.includes('run.app') && window.location.hostname !== 'localhost';
+    
+    if (parsed) {
+      if (isProd) {
+        parsed.mysql = { ...parsed.mysql, enabled: true, apiUrl: '/pos_api.php' };
+      }
+      return { ...initialSettings, ...parsed };
+    }
+    return initialSettings;
   });
   const [lang, setLang] = useState<Lang>(settings.defaultLanguage);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -231,7 +243,6 @@ export default function App() {
 
   // Filter tabs by permission and role
   const allowedTabs = allTabs.filter(tab => {
-    if (currentUser.role === 'admin') return true; // Admin has access to all tabs
     return currentUser.permissions[tab.requiredPerm as keyof AppUser['permissions']];
   });
 
@@ -339,8 +350,19 @@ export default function App() {
                </button>
             </div>
           )}
-          {activeTab === 'pos' && <POS products={products} customers={customers} onCompleteSale={handleSaleComplete} lang={lang} />}
-          {activeTab === 'dashboard' && <Dashboard products={products} sales={sales} lang={lang} />}
+          {activeTab === 'pos' && <POS products={products} customers={customers} onCompleteSale={handleSaleComplete} lang={lang} settings={settings} />}
+          {activeTab === 'dashboard' && (
+            <Dashboard 
+              products={products} 
+              sales={sales} 
+              lang={lang} 
+              onNavigate={(tab, filter) => {
+                setActiveTab(tab);
+                if (filter === 'low-stock') setStockFilter('low-stock');
+                else setStockFilter('all');
+              }}
+            />
+          )}
           {activeTab === 'inventory' && (
             <Inventory 
               categories={categories}
@@ -349,6 +371,7 @@ export default function App() {
               onUpdateProduct={handleUpdateProduct}
               onDeleteProduct={handleDeleteProduct}
               lang={lang} 
+              initialFilter={stockFilter}
             />
           )}
           {activeTab === 'categories' && (
@@ -372,6 +395,7 @@ export default function App() {
           {activeTab === 'reports' && <Reports sales={sales} products={products} lang={lang} />}
           {activeTab === 'users' && (
             <UserManagement 
+              currentUser={currentUser}
               users={users} 
               onAddUser={handleAddUser}
               onUpdateUser={handleUpdateUser}

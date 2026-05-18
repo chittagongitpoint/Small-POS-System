@@ -36,7 +36,7 @@ export interface Sale {
   customerPhone?: string;
 }
 
-export type Role = 'admin' | 'staff';
+export type Role = 'superAdmin' | 'admin' | 'staff';
 
 export interface MysqlSettings {
   enabled: boolean;
@@ -53,6 +53,8 @@ export interface SystemSettings {
   phone: string;
   defaultLanguage: 'en' | 'bn';
   mysql?: MysqlSettings;
+  receiptHeader?: string;
+  receiptFooter?: string;
 }
 
 export interface Permission {

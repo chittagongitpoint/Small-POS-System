@@ -10,11 +10,13 @@ interface InventoryProps {
   onUpdateProduct: (product: Product) => void;
   onDeleteProduct: (id: string) => void;
   lang: 'en' | 'bn';
+  initialFilter?: 'all' | 'low-stock';
 }
 
 const strings = {
   en: {
     addBtn: 'Add Product',
+    bulkBtn: 'Bulk Import',
     search: 'Search Inventory...',
     name: 'Product Name',
     category: 'Category',
@@ -27,9 +29,14 @@ const strings = {
     addTitle: 'Add New Product',
     image: 'Image',
     upload: 'Upload Image',
+    bulkTitle: 'Bulk Import (CSV)',
+    bulkPlaceholder: 'name,category,price,stock\nCeiling Fan,Fan,2500,10\nBattery,Electronics,12000,5',
+    import: 'Import',
+    invalidData: 'Invalid data format. Please use: name,category,price,stock',
   },
   bn: {
     addBtn: 'পণ্য যোগ করুন',
+    bulkBtn: 'বাল্ক ইম্পোর্ট',
     search: 'ইনভেন্টরি খুঁজুন...',
     name: 'পণ্যের নাম',
     category: 'বিভাগ',
@@ -42,22 +49,62 @@ const strings = {
     addTitle: 'নতুন পণ্য যোগ করুন',
     image: 'ছবি',
     upload: 'ছবি আপলোড করুন',
+    bulkTitle: 'বাল্ক ইম্পোর্ট (CSV)',
+    bulkPlaceholder: 'নাম,বিভাগ,দাম,স্টক\nপণ্য ১,বিভাগ ১,১০০,১০',
+    import: 'ইম্পোর্ট',
+    invalidData: 'ভুল ডেটা ফরম্যাট। ব্যবহার করুন: নাম,বিভাগ,দাম,স্টক',
   }
 };
 
-export default function Inventory({ products, categories, onAddProduct, onUpdateProduct, onDeleteProduct, lang }: InventoryProps) {
+export default function Inventory({ products, categories, onAddProduct, onUpdateProduct, onDeleteProduct, lang, initialFilter = 'all' }: InventoryProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkData, setBulkData] = useState('');
   const [editingItem, setEditingItem] = useState<Product | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string>('');
+  const [filterMode, setFilterMode] = useState<'all' | 'low-stock'>(initialFilter);
 
   const t = strings[lang];
 
-  const filtered = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filtered = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         p.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterMode === 'all' || (p.stock > 0 && p.stock <= 5);
+    return matchesSearch && matchesFilter;
+  });
+
+  const handleBulkImport = () => {
+    const lines = bulkData.trim().split('\n');
+    let importedCount = 0;
+    
+    lines.forEach(line => {
+      const parts = line.split(',').map(p => p.trim());
+      if (parts.length >= 4) {
+        const [name, category, price, stock] = parts;
+        if (name && category && !isNaN(Number(price)) && !isNaN(Number(stock))) {
+          const productData: Product = {
+            id: `P-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            name,
+            category,
+            price: Number(price),
+            stock: Number(stock),
+          };
+          onAddProduct(productData);
+          importedCount++;
+        }
+      }
+    });
+
+    if (importedCount > 0) {
+      alert(`Successfully imported ${importedCount} products!`);
+      setIsBulkModalOpen(false);
+      setBulkData('');
+    } else {
+      alert(t.invalidData);
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -132,14 +179,72 @@ export default function Inventory({ products, categories, onAddProduct, onUpdate
             className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <button 
-          onClick={openAdd}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap"
-        >
-          <Plus className="w-5 h-5" />
-          {t.addBtn}
-        </button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button 
+            onClick={() => setIsBulkModalOpen(true)}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap"
+          >
+            {t.bulkBtn}
+          </button>
+          <button 
+            onClick={openAdd}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap"
+          >
+            <Plus className="w-5 h-5" />
+            {t.addBtn}
+          </button>
+        </div>
       </div>
+
+      {filterMode === 'low-stock' && (
+        <div className="px-6 py-2 bg-rose-50 border-b border-rose-100 flex items-center justify-between">
+          <span className="text-xs font-bold text-rose-600 uppercase tracking-wider">
+            Showing Low Stock Items Only
+          </span>
+          <button 
+            onClick={() => setFilterMode('all')}
+            className="text-[10px] bg-rose-100 hover:bg-rose-200 text-rose-700 px-2 py-0.5 rounded font-bold transition-colors"
+          >
+            Show All
+          </button>
+        </div>
+      )}
+
+      {isBulkModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+              <h3 className="font-bold text-lg text-slate-800">{t.bulkTitle}</h3>
+              <button onClick={() => setIsBulkModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-slate-600">Paste your products below in CSV format. Each line should be: <code className="bg-slate-100 px-1 rounded font-bold text-blue-600">name,category,price,stock</code></p>
+              <textarea 
+                className="w-full h-64 px-3 py-2 border border-slate-300 rounded focus:outline-none focus:border-blue-500 font-mono text-sm leading-relaxed"
+                placeholder={t.bulkPlaceholder}
+                value={bulkData}
+                onChange={(e) => setBulkData(e.target.value)}
+              />
+              <div className="flex justify-end gap-3">
+                <button 
+                  onClick={() => setIsBulkModalOpen(false)}
+                  className="px-4 py-2 font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  {t.cancel}
+                </button>
+                <button 
+                  onClick={handleBulkImport}
+                  className="px-4 py-2 font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                >
+                  {t.import}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-auto">
         <table className="w-full text-left border-collapse">

@@ -77,20 +77,6 @@ export default function Login({ users, onLogin, systemName }: LoginProps) {
               </button>
             </div>
           </form>
-
-          <div className="mt-6 border-t border-slate-200 pt-6">
-            <p className="text-sm text-slate-600 mb-2">Demo Accounts:</p>
-            <div className="space-y-2">
-              <div className="text-xs bg-slate-50 p-2 rounded border border-slate-200 cursor-pointer hover:bg-slate-100" onClick={() => { setEmail('admin@khaja.com'); setPassword('password123'); }}>
-                <span className="font-semibold block text-slate-800">Admin:</span>
-                email: admin@khaja.com | pwd: password123
-              </div>
-              <div className="text-xs bg-slate-50 p-2 rounded border border-slate-200 cursor-pointer hover:bg-slate-100" onClick={() => { setEmail('staff@khaja.com'); setPassword('password123'); }}>
-                <span className="font-semibold block text-slate-800">Staff (No Inventory/Reports/Settings):</span>
-                email: staff@khaja.com | pwd: password123
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

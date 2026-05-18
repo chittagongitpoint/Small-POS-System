@@ -6,13 +6,15 @@ export const initialSettings: SystemSettings = {
   phone: '018XXXXXXXX',
   defaultLanguage: 'en',
   mysql: {
-    enabled: false,
-    apiUrl: '',
+    enabled: typeof window !== 'undefined' && !window.location.hostname.includes('run.app') && window.location.hostname !== 'localhost',
+    apiUrl: '/pos_api.php',
     dbHost: 'localhost',
     dbName: '',
     dbUser: '',
     dbPass: ''
-  }
+  },
+  receiptHeader: 'Thank you for shopping with us!',
+  receiptFooter: 'Please come again.'
 };
 
 export const initialCategories: CategoryItem[] = [
@@ -54,7 +56,7 @@ export const initialUsers: AppUser[] = [
     name: 'Md. Khaja',
     email: 'admin@khaja.com',
     phone: '01911000000',
-    role: 'admin',
+    role: 'superAdmin',
     password: 'password123',
     permissions: {
       dashboard: true,
@@ -68,6 +70,23 @@ export const initialUsers: AppUser[] = [
   },
   {
     id: 'U-1002',
+    name: 'Admin User',
+    email: 'manager@khaja.com',
+    phone: '01811000000',
+    role: 'admin',
+    password: 'password123',
+    permissions: {
+      dashboard: true,
+      pos: true,
+      inventory: true,
+      customers: true,
+      reports: true,
+      users: false,
+      settings: true
+    }
+  },
+  {
+    id: 'U-1003',
     name: 'Sales Staff',
     email: 'staff@khaja.com',
     phone: '01611000000',

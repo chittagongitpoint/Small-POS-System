@@ -4,6 +4,7 @@ import { Plus, Edit2, Trash2, Search, X, ShieldAlert, Check } from 'lucide-react
 import ConfirmDialog from './ConfirmDialog';
 
 interface UserManagementProps {
+  currentUser: AppUser;
   users: AppUser[];
   onAddUser: (user: AppUser) => void;
   onUpdateUser: (user: AppUser) => void;
@@ -46,7 +47,7 @@ const strings = {
   }
 };
 
-export default function UserManagement({ users, onAddUser, onUpdateUser, onDeleteUser, lang }: UserManagementProps) {
+export default function UserManagement({ currentUser, users, onAddUser, onUpdateUser, onDeleteUser, lang }: UserManagementProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<AppUser | null>(null);
@@ -70,13 +71,34 @@ export default function UserManagement({ users, onAddUser, onUpdateUser, onDelet
     }
   };
 
+  const [selectedRole, setSelectedRole] = useState<Role>('staff');
+  const [permissions, setPermissions] = useState<AppUser['permissions']>(() => ({
+    dashboard: true, pos: true, inventory: false, customers: true, reports: false, users: false, settings: false
+  }));
+
+  const getRolePermissions = (role: Role) => {
+    switch(role) {
+      case 'superAdmin':
+        return { dashboard: true, pos: true, inventory: true, customers: true, reports: true, users: true, settings: true };
+      case 'admin':
+        return { dashboard: true, pos: true, inventory: true, customers: true, reports: true, users: false, settings: true };
+      case 'staff':
+      default:
+        return { dashboard: true, pos: true, inventory: false, customers: true, reports: false, users: false, settings: false };
+    }
+  };
+
   const openAdd = () => {
     setEditingItem(null);
+    setSelectedRole('staff');
+    setPermissions(getRolePermissions('staff'));
     setIsModalOpen(true);
   };
 
   const openEdit = (user: AppUser) => {
     setEditingItem(user);
+    setSelectedRole(user.role);
+    setPermissions(user.permissions);
     setIsModalOpen(true);
   };
 
@@ -85,33 +107,28 @@ export default function UserManagement({ users, onAddUser, onUpdateUser, onDelet
     setEditingItem(null);
   };
 
+  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newRole = e.target.value as Role;
+    setSelectedRole(newRole);
+    setPermissions(getRolePermissions(newRole));
+  };
+
+  const handlePermissionChange = (perm: keyof AppUser['permissions']) => {
+    setPermissions(prev => ({ ...prev, [perm]: !prev[perm] }));
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
-    const role = formData.get('role') as Role;
     const isEditingMode = !!editingItem;
     
-    // For simplicity in this demo, admin has all permissions. 
-    // We could allow detailed checkbox selection, but a simple role-based or checkbox array is better.
-    // Let's implement actual checkboxes for permissions.
-    const permissions = {
-      dashboard: formData.get('perm_dashboard') === 'on',
-      pos: formData.get('perm_pos') === 'on',
-      inventory: formData.get('perm_inventory') === 'on',
-      customers: formData.get('perm_customers') === 'on',
-      reports: formData.get('perm_reports') === 'on',
-      users: formData.get('perm_users') === 'on',
-      settings: formData.get('perm_settings') === 'on'
-    };
-
     const userData: AppUser = {
       id: isEditingMode ? editingItem.id : `U-${Date.now()}`,
       name: formData.get('name') as string,
       email: formData.get('email') as string,
       phone: formData.get('phone') as string,
-      role: role,
-      password: (formData.get('password') as string) || (isEditingMode ? editingItem.password : 'defaultPass123'),
+      role: selectedRole,
+      password: (formData.get('password') as string) || (isEditingMode ? editingItem.password : 'password123'),
       permissions: permissions
     };
 
@@ -172,7 +189,11 @@ export default function UserManagement({ users, onAddUser, onUpdateUser, onDelet
                   <div className="text-xs text-slate-500">{user.phone}</div>
                 </td>
                 <td className="p-4">
-                  <span className={`px-2 py-1 rounded text-xs font-bold uppercase \${user.role === 'admin' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-700'}`}>
+                  <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                    user.role === 'superAdmin' ? 'bg-purple-100 text-purple-700' : 
+                    user.role === 'admin' ? 'bg-amber-100 text-amber-700' : 
+                    'bg-slate-200 text-slate-700'
+                  }`}>
                     {user.role}
                   </span>
                 </td>
@@ -189,12 +210,19 @@ export default function UserManagement({ users, onAddUser, onUpdateUser, onDelet
                   </div>
                 </td>
                 <td className="p-4 flex items-center justify-end gap-2">
-                  <button onClick={() => openEdit(user)} className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors">
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => handleDelete(user.id)} className="p-2 text-red-500 hover:bg-red-50 rounded transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {(currentUser.role === 'superAdmin' || user.role !== 'superAdmin') && (
+                    <>
+                      <button onClick={() => openEdit(user)} className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(user.id)} className="p-2 text-red-500 hover:bg-red-50 rounded transition-colors" title="Delete">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                  {currentUser.role !== 'superAdmin' && user.role === 'superAdmin' && (
+                    <span className="text-[10px] text-slate-400 italic italic">Protected</span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -236,11 +264,13 @@ export default function UserManagement({ users, onAddUser, onUpdateUser, onDelet
                     <label className="block text-sm font-medium text-slate-700 mb-1">{t.role}</label>
                     <select 
                       name="role"
-                      defaultValue={editingItem?.role || 'staff'}
+                      value={selectedRole}
+                      onChange={handleRoleChange}
                       className="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:border-blue-500 text-sm bg-white"
                     >
                       <option value="staff">Staff</option>
                       <option value="admin">Admin</option>
+                      {currentUser.role === 'superAdmin' && <option value="superAdmin">SuperAdmin</option>}
                     </select>
                   </div>
                   <div>
@@ -277,17 +307,25 @@ export default function UserManagement({ users, onAddUser, onUpdateUser, onDelet
                 <div className="border-t border-slate-100 pt-4 mt-2">
                   <label className="block text-sm font-bold text-slate-800 mb-3">{t.permissions}</label>
                   <div className="grid grid-cols-2 gap-3">
-                    {['dashboard', 'pos', 'inventory', 'customers', 'reports', 'users', 'settings'].map((perm) => (
-                      <label key={perm} className="flex items-center gap-2 cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          name={`perm_${perm}`} 
-                          defaultChecked={editingItem ? editingItem.permissions[perm as keyof AppUser['permissions']] : ['dashboard', 'pos'].includes(perm)}
-                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
-                        />
-                        <span className="text-sm font-medium text-slate-700 capitalize">{perm}</span>
-                      </label>
-                    ))}
+                    {['dashboard', 'pos', 'inventory', 'customers', 'reports', 'users', 'settings'].map((perm) => {
+                      const isSensitive = ['users', 'settings'].includes(perm);
+                      const canManageSensitive = currentUser.role === 'superAdmin';
+                      
+                      if (isSensitive && !canManageSensitive) return null;
+                      
+                      return (
+                        <label key={perm} className="flex items-center gap-2 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            name={`perm_${perm}`} 
+                            checked={permissions[perm as keyof AppUser['permissions']]}
+                            onChange={() => handlePermissionChange(perm as keyof AppUser['permissions'])}
+                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                          />
+                          <span className="text-sm font-medium text-slate-700 capitalize">{perm}</span>
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

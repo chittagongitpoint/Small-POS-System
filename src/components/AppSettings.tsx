@@ -32,7 +32,10 @@ const strings = {
     testConn: 'Test Connection',
     testing: 'Testing...',
     connSuccess: 'Connection Successful!',
-    connFail: 'Connection Failed'
+    connFail: 'Connection Failed',
+    receiptSection: 'Receipt Customization',
+    receiptHeader: 'Receipt Header Text',
+    receiptFooter: 'Receipt Footer Text',
   },
   bn: {
     title: 'সিস্টেম সেটিংস',
@@ -56,7 +59,10 @@ const strings = {
     testConn: 'কানেকশন টেস্ট করুন',
     testing: 'টেস্ট হচ্ছে...',
     connSuccess: 'কানেকশন সফল হয়েছে!',
-    connFail: 'কানেকশন ব্যর্থ হয়েছে'
+    connFail: 'কানেকশন ব্যর্থ হয়েছে',
+    receiptSection: 'রশিদ কাস্টমাইজেশন',
+    receiptHeader: 'রশিদের ওপরের লেখা',
+    receiptFooter: 'রশিদের নিচের লেখা',
   }
 };
 
@@ -107,18 +113,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Get credentials from POST (prioritized) or Headers
-$host = $_POST['dbHost'] ?? $_SERVER['HTTP_X_DB_HOST'] ?? '';
-$dbname = $_POST['dbName'] ?? $_SERVER['HTTP_X_DB_NAME'] ?? '';
-$user = $_POST['dbUser'] ?? $_SERVER['HTTP_X_DB_USER'] ?? '';
-$pass = $_POST['dbPass'] ?? $_SERVER['HTTP_X_DB_PASS'] ?? '';
+$host = !empty($_POST['dbHost']) ? $_POST['dbHost'] : ($_SERVER['HTTP_X_DB_HOST'] ?? 'localhost');
+$dbname = !empty($_POST['dbName']) ? $_POST['dbName'] : ($_SERVER['HTTP_X_DB_NAME'] ?? 'my_database');
+$user = !empty($_POST['dbUser']) ? $_POST['dbUser'] : ($_SERVER['HTTP_X_DB_USER'] ?? 'my_user');
+$pass = !empty($_POST['dbPass']) ? $_POST['dbPass'] : ($_SERVER['HTTP_X_DB_PASS'] ?? '');
 
 // Fallback for JSON body if still used
-if (!$host) {
+if (!$host || $host === 'localhost') {
     $input = json_decode(file_get_contents('php://input'), true);
-    $host = $input['dbHost'] ?? '';
-    $dbname = $input['dbName'] ?? '';
-    $user = $input['dbUser'] ?? '';
-    $pass = $input['dbPass'] ?? '';
+    $host = !empty($input['dbHost']) ? $input['dbHost'] : $host;
+    $dbname = !empty($input['dbName']) ? $input['dbName'] : $dbname;
+    $user = !empty($input['dbUser']) ? $input['dbUser'] : $user;
+    $pass = !empty($input['dbPass']) ? $input['dbPass'] : $pass;
 }
 
 if (!$host || !$dbname || !$user) {
@@ -306,7 +312,38 @@ try {
               </div>
             </div>
 
-            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 space-y-4">
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 space-y-6">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
+                <Settings className="w-4 h-4 text-blue-600" />
+                {t.receiptSection}
+              </h3>
+              
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+                  {t.receiptHeader}
+                </label>
+                <textarea
+                  value={formData.receiptHeader || ''}
+                  onChange={(e) => setFormData({ ...formData, receiptHeader: e.target.value })}
+                  rows={2}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+                  {t.receiptFooter}
+                </label>
+                <textarea
+                  value={formData.receiptFooter || ''}
+                  onChange={(e) => setFormData({ ...formData, receiptFooter: e.target.value })}
+                  rows={2}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 space-y-4 lg:col-span-2">
               <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
                 <Database className="w-4 h-4 text-blue-600" />
                 {t.mysqlSection}
