@@ -53,8 +53,6 @@ export interface SystemSettings {
   phone: string;
   defaultLanguage: 'en' | 'bn';
   mysql?: MysqlSettings;
-  receiptHeader?: string;
-  receiptFooter?: string;
 }
 
 export interface Permission {

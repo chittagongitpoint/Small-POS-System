@@ -12,9 +12,7 @@ export const initialSettings: SystemSettings = {
     dbName: '',
     dbUser: '',
     dbPass: ''
-  },
-  receiptHeader: 'Thank you for shopping with us!',
-  receiptFooter: 'Please come again.'
+  }
 };
 
 export const initialCategories: CategoryItem[] = [

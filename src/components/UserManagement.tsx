@@ -54,6 +54,28 @@ export default function UserManagement({ currentUser, users, onAddUser, onUpdate
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const t = strings[lang];
+  const [view, setView] = useState<'users' | 'roles'>('users');
+
+  const roleDefinitions = [
+    {
+      name: 'SuperAdmin',
+      role: 'superAdmin',
+      description: lang === 'en' ? 'Full system control. Can manage other users, permissions, and system-wide settings.' : 'সিস্টেমের পূর্ণ নিয়ন্ত্রণ। ইউজার, পারমিশন এবং সেটিংস পরিবর্তন করতে পারেন।',
+      access: ['dashboard', 'pos', 'inventory', 'customers', 'reports', 'users', 'settings']
+    },
+    {
+      name: 'Admin',
+      role: 'admin',
+      description: lang === 'en' ? 'Managerial access. Can manage inventory, products, and reports but cannot modify other user accounts or roles.' : 'ম্যানেজারিয়াল অ্যাক্সেস। ইনভেন্টরি, পণ্য এবং রিপোর্ট তদারকি করতে পারেন কিন্তু অন্য ইউজার পরিবর্তন করতে পারেন না।',
+      access: ['dashboard', 'pos', 'inventory', 'customers', 'reports', 'settings']
+    },
+    {
+      name: 'Staff',
+      role: 'staff',
+      description: lang === 'en' ? 'Operational access. Restricted to sales (POS), customers, and basic dashboard overview.' : 'অপারেশনাল অ্যাক্সেস। শুধুমাত্র বিক্রয় (POS), কাস্টমার এবং ড্যাশবোর্ড ব্যবহারের অনুমতি রয়েছে।',
+      access: ['dashboard', 'pos', 'customers']
+    }
+  ];
 
   const filtered = users.filter(u => 
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -148,93 +170,146 @@ export default function UserManagement({ currentUser, users, onAddUser, onUpdate
             <ShieldAlert className="w-5 h-5" />
           </div>
           <h2 className="font-bold text-lg text-slate-800">{t.title}</h2>
+          <div className="flex bg-slate-100 p-1 rounded-lg ml-2">
+            <button 
+              onClick={() => setView('users')}
+              className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${view === 'users' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              {lang === 'en' ? 'Users' : 'ইউজার'}
+            </button>
+            <button 
+              onClick={() => setView('roles')}
+              className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${view === 'roles' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              {lang === 'en' ? 'Roles' : 'রোলসমূহ'}
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-4 w-full sm:w-auto">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <input 
-              type="text" 
-              placeholder={t.search}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            />
-          </div>
-          <button 
-            onClick={openAdd}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            {t.addBtn}
-          </button>
+          {view === 'users' && (
+            <>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input 
+                  type="text" 
+                  placeholder={t.search}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              <button 
+                onClick={openAdd}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-sm"
+              >
+                <Plus className="w-4 h-4" />
+                {t.addBtn}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       <div className="flex-1 overflow-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-100 text-[#475569] text-[11px] uppercase tracking-wider sticky top-0 z-10">
-              <th className="p-4 font-bold">{t.name}</th>
-              <th className="p-4 font-bold">{t.role}</th>
-              <th className="p-4 font-bold">{t.email}</th>
-              <th className="p-4 font-bold">{t.permissions}</th>
-              <th className="p-4 font-bold text-right">{t.actions}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filtered.map(user => (
-              <tr key={user.id} className="hover:bg-slate-50 transition-colors text-sm">
-                <td className="p-4">
-                  <div className="font-medium text-slate-800">{user.name}</div>
-                  <div className="text-xs text-slate-500">{user.phone}</div>
-                </td>
-                <td className="p-4">
-                  <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
-                    user.role === 'superAdmin' ? 'bg-purple-100 text-purple-700' : 
-                    user.role === 'admin' ? 'bg-amber-100 text-amber-700' : 
-                    'bg-slate-200 text-slate-700'
-                  }`}>
-                    {user.role}
-                  </span>
-                </td>
-                <td className="p-4 text-slate-600">{user.email}</td>
-                <td className="p-4">
-                  <div className="flex gap-1 flex-wrap max-w-[200px]">
-                    {Object.entries(user.permissions).map(([key, value]) => 
-                      value ? (
-                        <span key={key} className="text-[10px] bg-blue-50 border border-blue-100 text-blue-600 px-1.5 py-0.5 rounded capitalize">
-                          {key}
-                        </span>
-                      ) : null
+        {view === 'users' ? (
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-100 text-[#475569] text-[11px] uppercase tracking-wider sticky top-0 z-10">
+                <th className="p-4 font-bold">{t.name}</th>
+                <th className="p-4 font-bold">{t.role}</th>
+                <th className="p-4 font-bold">{t.email}</th>
+                <th className="p-4 font-bold">{t.permissions}</th>
+                <th className="p-4 font-bold text-right">{t.actions}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filtered.map(user => (
+                <tr key={user.id} className="hover:bg-slate-50 transition-colors text-sm">
+                  <td className="p-4">
+                    <div className="font-medium text-slate-800">{user.name}</div>
+                    <div className="text-xs text-slate-500">{user.phone}</div>
+                  </td>
+                  <td className="p-4">
+                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                      user.role === 'superAdmin' ? 'bg-purple-100 text-purple-700' : 
+                      user.role === 'admin' ? 'bg-amber-100 text-amber-700' : 
+                      'bg-slate-200 text-slate-700'
+                    }`}>
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="p-4 text-slate-600">{user.email}</td>
+                  <td className="p-4">
+                    <div className="flex gap-1 flex-wrap max-w-[200px]">
+                      {Object.entries(user.permissions).map(([key, value]) => 
+                        value ? (
+                          <span key={key} className="text-[10px] bg-blue-50 border border-blue-100 text-blue-600 px-1.5 py-0.5 rounded capitalize">
+                            {key}
+                          </span>
+                        ) : null
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-4 flex items-center justify-end gap-2">
+                    {(currentUser.role === 'superAdmin' || user.role !== 'superAdmin') && (
+                      <>
+                        <button onClick={() => openEdit(user)} className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDelete(user.id)} className="p-2 text-red-500 hover:bg-red-50 rounded transition-colors" title="Delete">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </>
                     )}
+                    {currentUser.role !== 'superAdmin' && user.role === 'superAdmin' && (
+                      <span className="text-[10px] text-slate-400 italic italic">Protected</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-slate-400">
+                    No users found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        ) : (
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {roleDefinitions.map((def) => (
+                <div key={def.role} className="bg-slate-50 border border-slate-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-slate-800">{def.name}</h3>
+                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                      def.role === 'superAdmin' ? 'bg-purple-100 text-purple-700' : 
+                      def.role === 'admin' ? 'bg-amber-100 text-amber-700' : 
+                      'bg-slate-200 text-slate-700'
+                    }`}>
+                      {def.role}
+                    </span>
                   </div>
-                </td>
-                <td className="p-4 flex items-center justify-end gap-2">
-                  {(currentUser.role === 'superAdmin' || user.role !== 'superAdmin') && (
-                    <>
-                      <button onClick={() => openEdit(user)} className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => handleDelete(user.id)} className="p-2 text-red-500 hover:bg-red-50 rounded transition-colors" title="Delete">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </>
-                  )}
-                  {currentUser.role !== 'superAdmin' && user.role === 'superAdmin' && (
-                    <span className="text-[10px] text-slate-400 italic italic">Protected</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={5} className="p-8 text-center text-slate-400">
-                  No users found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                  <p className="text-xs text-slate-600 mb-6 leading-relaxed">
+                    {def.description}
+                  </p>
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.permissions}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {def.access.map(perm => (
+                        <div key={perm} className="flex items-center gap-1 bg-white border border-slate-200 rounded px-2 py-1">
+                          <Check className="w-3 h-3 text-emerald-500" />
+                          <span className="text-[10px] font-medium text-slate-700 capitalize">{perm}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {isModalOpen && (

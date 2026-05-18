@@ -33,9 +33,6 @@ const strings = {
     testing: 'Testing...',
     connSuccess: 'Connection Successful!',
     connFail: 'Connection Failed',
-    receiptSection: 'Receipt Customization',
-    receiptHeader: 'Receipt Header Text',
-    receiptFooter: 'Receipt Footer Text',
   },
   bn: {
     title: 'সিস্টেম সেটিংস',
@@ -60,9 +57,6 @@ const strings = {
     testing: 'টেস্ট হচ্ছে...',
     connSuccess: 'কানেকশন সফল হয়েছে!',
     connFail: 'কানেকশন ব্যর্থ হয়েছে',
-    receiptSection: 'রশিদ কাস্টমাইজেশন',
-    receiptHeader: 'রশিদের ওপরের লেখা',
-    receiptFooter: 'রশিদের নিচের লেখা',
   }
 };
 
@@ -309,37 +303,6 @@ try {
                   <option value="en">{t.english}</option>
                   <option value="bn">{t.bengali}</option>
                 </select>
-              </div>
-            </div>
-
-            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 space-y-6">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
-                <Settings className="w-4 h-4 text-blue-600" />
-                {t.receiptSection}
-              </h3>
-              
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
-                  {t.receiptHeader}
-                </label>
-                <textarea
-                  value={formData.receiptHeader || ''}
-                  onChange={(e) => setFormData({ ...formData, receiptHeader: e.target.value })}
-                  rows={2}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
-                  {t.receiptFooter}
-                </label>
-                <textarea
-                  value={formData.receiptFooter || ''}
-                  onChange={(e) => setFormData({ ...formData, receiptFooter: e.target.value })}
-                  rows={2}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                />
               </div>
             </div>
 
