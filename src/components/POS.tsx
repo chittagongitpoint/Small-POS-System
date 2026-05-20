@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Product, CartItem, Sale, Customer, SystemSettings } from '../types';
-import { ShoppingCart, Plus, Minus, Trash2, Search, User, CheckCircle } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, Search, User } from 'lucide-react';
 import ConfirmDialog from './ConfirmDialog';
 
 interface POSProps {
@@ -47,7 +47,6 @@ export default function POS({ products, customers, onCompleteSale, lang, setting
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [isConfirmingSale, setIsConfirmingSale] = useState(false);
-  const [lastSale, setLastSale] = useState<Sale | null>(null);
 
   const t = strings[lang];
 
@@ -116,7 +115,6 @@ export default function POS({ products, customers, onCompleteSale, lang, setting
       ...customerDetails
     };
     onCompleteSale(newSale);
-    setLastSale(newSale);
     setCart([]);
     setSelectedCustomerId('');
   };
@@ -258,28 +256,6 @@ export default function POS({ products, customers, onCompleteSale, lang, setting
           </button>
         </div>
       </div>
-      
-      {lastSale && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 flex items-center gap-6 animate-in slide-in-from-bottom-8">
-          <div className="flex items-center gap-3 border-r border-emerald-500 pr-6">
-            <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
-              <CheckCircle className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="font-bold">Sale Completed!</p>
-              <p className="text-xs opacity-90">ID: {lastSale.id}</p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => setLastSale(null)}
-              className="px-4 py-2 bg-emerald-700 text-white rounded-lg font-bold text-sm hover:bg-emerald-800 transition-colors"
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      )}
       
       <ConfirmDialog 
         isOpen={isConfirmingSale}
