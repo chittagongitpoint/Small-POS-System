@@ -107,10 +107,12 @@ export default function POS({ products, customers, onCompleteSale, lang, setting
       }
     }
 
+    const cleanItems = cart.map(({ image, ...rest }) => ({ ...rest }));
+
     const newSale: Sale = {
       id: `S-${Math.floor(10000 + Math.random() * 90000)}`,
       date: new Date().toISOString(),
-      items: [...cart],
+      items: cleanItems,
       total: total,
       ...customerDetails
     };
